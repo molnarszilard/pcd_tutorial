@@ -1,0 +1,12 @@
+<launch>
+ <node pkg="pcd_tutorial" type="pcd_tutorial_node" name="pcd_tutorial_node" output="screen" >
+<remap from="point_cloud_in" to="/pico_zense/depth/points"/>
+<remap from="imu_data" to="filtered_imu"/>
+
+</node>
+
+<node pkg="pcd_tutorial" name="kalman" type="kalman.py" output="screen">
+</node>
+
+</launch>
+
