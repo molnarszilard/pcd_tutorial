@@ -84,7 +84,7 @@ public:
     void
     dynReconfCallback(pcd_tutorial::voxel_filter_nodeConfig &config, uint32_t level)
     {
-        leaf_size = config.leafsize;
+        //leaf_size = config.leafsize;
         StddevMulThresh = config.StddevMulThresh;                 //1.0
         MeanK = config.MeanK;                                     //50
     }
@@ -94,7 +94,7 @@ private:
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh;
     std::string tf_frame = "pico_zense_depth_frame";
-    float leaf_size = 0.02f;
+    float leaf_size = 0.01f;
     ros::Subscriber sub_;
     pcl_ros::Publisher<sensor_msgs::PointCloud2> pub_;
     dynamic_reconfigure::Server<pcd_tutorial::voxel_filter_nodeConfig> config_server_;

@@ -67,7 +67,7 @@ public:
         // pub_image = it.advertise("camera/image", 1);
         sub_ = nh_.subscribe("point_cloud_in", 1, &PCD_Processing::cloudCallback, this);
         config_server_.setCallback(boost::bind(&PCD_Processing::dynReconfCallback, this, _1, _2));
-        sub_imu = nh_.subscribe("imu_data", 1, &PCD_Processing::imuCallback, this);
+        // sub_imu = nh_.subscribe("imu_data", 1, &PCD_Processing::imuCallback, this);
         ros::NodeHandle private_nh("~");
         private_nh.param("frame_id", tf_frame, std::string("pico_zense_depth_frame"));
     }
@@ -275,15 +275,16 @@ public:
         seg.setDistanceThreshold(0.02);
         int i = 0, nr_points = (int)cloud_filtered->size(), j = 0;
 
-        while (cloud_filtered->size() > 0.1 * nr_points)
-        {
+        // while (cloud_filtered->size() > 0.6 * nr_points)
+        // while (j<3)
+        // {
             // Segment the largest planar component from the remaining cloud
             seg.setInputCloud(cloud_filtered);
             seg.segment(*inliers, *coefficients);
             if (inliers->indices.size() == 0)
             {
                 std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-                break;
+                // break;
             }
             // Extract the planar inliers from the input cloud
             pcl::ExtractIndices<pcl::PointXYZ> extract;
@@ -293,18 +294,26 @@ public:
             // Get the points associated with the planar surface
             extract.filter(*cloud_plane);
             std::cout << "PointCloud representing the planar component: " << cloud_plane->size() << " data points." << std::endl;
-            *cloud_colored_pcl = *cloud_colored_pcl + planefind(cloud_plane, j, coefficients);
+            //*cloud_colored_pcl = *cloud_colored_pcl + planefind(cloud_plane, j, coefficients);
+        //      Eigen::Vector3f normal;
+        // normal << coefficients->values[0], coefficients->values[1], coefficients->values[2];
+        // if (coefficients->values[3] < 0)
+        // {
+        //     normal *= -1;
+        // }
+        // float angle = acos(gravity.dot(normal));
+        // std::cout << "Angle: " << angle << ", hv:"<< hv_tolerance << std::endl;
             // Remove the planar inliers, extract the rest
-            extract.setNegative(true);
+            if (cloud_plane->size()  > big_plane_size) extract.setNegative(true);
             extract.filter(*cloud_f);
             *cloud_filtered = *cloud_f;
             j++;
-        }
+        
 
-        pcl::toROSMsg(*cloud_colored_pcl, cloud_colored_sensor);
+        pcl::toROSMsg(*cloud_filtered, cloud_colored_sensor);
         cloud_colored_sensor.header.frame_id = "pico_zense_depth_frame";
         std::string fields_list = pcl::getFieldsList(cloud_colored_sensor);
-        std::cout << "Colored PointCloud before filtering has: " << cloud_colored_sensor.width << " data points."
+        std::cout << "PointCloud after segmentaion has: " << cloud_colored_sensor.width << " data points."
                   << " points " << fields_list << "\" in frame \"" << cloud_colored_sensor.header.frame_id << std::endl;
         cloud_colored_sensor.header.stamp = ros::Time::now();
         pub_.publish(cloud_colored_sensor);
@@ -314,7 +323,7 @@ public:
     void
     dynReconfCallback(pcd_tutorial::pcd_tutorial_nodeConfig &config, uint32_t level)
     {
-        leaf_size = config.leafsize;
+        //leaf_size = config.leafsize;
         th = config.overlap_threshold;
         big_plane_size = config.big_plane_size;
         min_cloud_size = config.min_cloud_size;
@@ -409,7 +418,7 @@ private:
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh;
     std::string tf_frame = "pico_zense_depth_frame";
-    float leaf_size = 0.02f;
+    float leaf_size = 0.01f;
     float th = 0.6;
     size_t big_plane_size = 1000;
     size_t min_cloud_size = 100;

@@ -9,5 +9,9 @@
 <node pkg="pcd_tutorial" name="kalman" type="kalman.py" output="screen">
 </node>
 
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher" />
+
+
 </launch>
 
