@@ -1,0 +1,12 @@
+<launch>
+
+ <node pkg="pcd_tutorial" type="voxel_filter" name="voxel_filter" output="screen" >
+<remap from="point_cloud_in" to="/pico_zense/depth/points"/>
+
+</node>
+
+<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher" />
+
+</launch>
+

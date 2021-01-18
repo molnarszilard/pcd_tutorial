@@ -2,16 +2,11 @@
 
 #include "sensor_msgs/Imu.h"
 #include <pcd_tutorial/pcd_tutorial_nodeConfig.h>
-#include <cv_bridge/cv_bridge.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <image_transport/image_transport.h>
 #include <iostream>
 #include <math.h>
-#include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_msgs/PolygonMesh.h>
 #include <pcl_ros/point_cloud.h>
@@ -68,8 +63,8 @@ public:
         pub_.advertise(nh_, cloud_topic.c_str(), 1);
         gravity_marker_pub = nh_.advertise<visualization_msgs::Marker>("imu_out", 1);
         normal_marker_pub = nh_.advertise<visualization_msgs::Marker>("normal_out", 1);
-        image_transport::ImageTransport it(nh_);
-        pub_image = it.advertise("camera/image", 1);
+        // image_transport::ImageTransport it(nh_);
+        // pub_image = it.advertise("camera/image", 1);
         sub_ = nh_.subscribe("point_cloud_in", 1, &PCD_Processing::cloudCallback, this);
         config_server_.setCallback(boost::bind(&PCD_Processing::dynReconfCallback, this, _1, _2));
         sub_imu = nh_.subscribe("imu_data", 1, &PCD_Processing::imuCallback, this);
@@ -155,92 +150,92 @@ public:
         return *cloud_colored_cluster;
     }
 
-    void imageFromPCD(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud)
-    {
-        // calibration parameters
-        // double K[9] = {385.8655956930966, 0.0, 342.3593021849471,
-        //                0.0, 387.13463636528166, 233.38372018194542,
-        //                0.0, 0.0, 1.0};
+    // void imageFromPCD(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud)
+    // {
+    //     // calibration parameters
+    //     // double K[9] = {385.8655956930966, 0.0, 342.3593021849471,
+    //     //                0.0, 387.13463636528166, 233.38372018194542,
+    //     //                0.0, 0.0, 1.0};
 
-        // EEPROM parameters
-        double K[9] = {460.585, 0.0, 334.080,
-                       0.0, 460.267, 169.807,
-                       0.0, 0.0, 1.0};
+    //     // EEPROM parameters
+    //     double K[9] = {460.585, 0.0, 334.080,
+    //                    0.0, 460.267, 169.807,
+    //                    0.0, 0.0, 1.0};
 
-        double centerX_ = K[2];
-        double centerY_ = K[5];
-        double focalX_ = K[0];
-        double focalY_ = K[4];
-        int height_ = 360;
-        int width_ = 640;
-        int pixel_pos_x, pixel_pos_y;
-        float z, u, v;
-        cv::Mat cv_image;
-        std::vector<cv::Point2d> imagePoints;
+    //     double centerX_ = K[2];
+    //     double centerY_ = K[5];
+    //     double focalX_ = K[0];
+    //     double focalY_ = K[4];
+    //     int height_ = 360;
+    //     int width_ = 640;
+    //     int pixel_pos_x, pixel_pos_y;
+    //     float z, u, v;
+    //     cv::Mat cv_image;
+    //     std::vector<cv::Point2d> imagePoints;
 
-        std::cout << "PointCloud has: " << cloud->size() << " data points." << std::endl;
-        //cv_image = Mat(height_, width_, CV_32FC1, 0.0); //Scalar(std::numeric_limits<float>::max()));
-        cv::Mat output = cv::Mat::zeros(height_, width_, CV_8UC3);
-        for (int i = 0; i < cloud->points.size(); i++)
-        {
-            uint32_t rgb = cloud->points[i].rgb;
+    //     std::cout << "PointCloud has: " << cloud->size() << " data points." << std::endl;
+    //     //cv_image = Mat(height_, width_, CV_32FC1, 0.0); //Scalar(std::numeric_limits<float>::max()));
+    //     cv::Mat output = cv::Mat::zeros(height_, width_, CV_8UC3);
+    //     for (int i = 0; i < cloud->points.size(); i++)
+    //     {
+    //         uint32_t rgb = cloud->points[i].rgb;
 
-            uint8_t r = cloud->points[i].r;
-            uint8_t g = cloud->points[i].g;
-            uint8_t b = cloud->points[i].b;
-            //std::cout<<"rgb="<<(int)r<<", "<<(int)g<<", "<<(int)b<<std::endl;
+    //         uint8_t r = cloud->points[i].r;
+    //         uint8_t g = cloud->points[i].g;
+    //         uint8_t b = cloud->points[i].b;
+    //         //std::cout<<"rgb="<<(int)r<<", "<<(int)g<<", "<<(int)b<<std::endl;
 
-            z = cloud->points[i].z * 1000.0;
-            u = (cloud->points[i].x * 1000.0 * focalX_) / z;
-            v = (cloud->points[i].y * 1000.0 * focalY_) / z;
+    //         z = cloud->points[i].z * 1000.0;
+    //         u = (cloud->points[i].x * 1000.0 * focalX_) / z;
+    //         v = (cloud->points[i].y * 1000.0 * focalY_) / z;
 
-            pixel_pos_x = (int)(u + centerX_);
-            pixel_pos_y = (int)(v + centerY_);
+    //         pixel_pos_x = (int)(u + centerX_);
+    //         pixel_pos_y = (int)(v + centerY_);
 
-            if (pixel_pos_x > (width_ - 1))
-            {
-                pixel_pos_x = width_ - 1;
-            }
-            else if (pixel_pos_x < 0)
-            {
-                pixel_pos_x = -pixel_pos_x;
-            }
-            if (pixel_pos_y > (height_ - 1))
-            {
-                pixel_pos_y = height_ - 1;
-            }
-            else if (pixel_pos_y < 0)
-            {
-                pixel_pos_y = -pixel_pos_y;
-            }
+    //         if (pixel_pos_x > (width_ - 1))
+    //         {
+    //             pixel_pos_x = width_ - 1;
+    //         }
+    //         else if (pixel_pos_x < 0)
+    //         {
+    //             pixel_pos_x = -pixel_pos_x;
+    //         }
+    //         if (pixel_pos_y > (height_ - 1))
+    //         {
+    //             pixel_pos_y = height_ - 1;
+    //         }
+    //         else if (pixel_pos_y < 0)
+    //         {
+    //             pixel_pos_y = -pixel_pos_y;
+    //         }
 
-            output.at<cv::Vec3b>(pixel_pos_y, pixel_pos_x)[0] = b;
-            output.at<cv::Vec3b>(pixel_pos_y, pixel_pos_x)[1] = g;
-            output.at<cv::Vec3b>(pixel_pos_y, pixel_pos_x)[2] = r;
-        }
+    //         output.at<cv::Vec3b>(pixel_pos_y, pixel_pos_x)[0] = b;
+    //         output.at<cv::Vec3b>(pixel_pos_y, pixel_pos_x)[1] = g;
+    //         output.at<cv::Vec3b>(pixel_pos_y, pixel_pos_x)[2] = r;
+    //     }
 
-        sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output).toImageMsg();
-        ros::Time time = ros::Time::now();
-        msg->header.stamp = time;
-        msg->header.frame_id = "pico_zense_depth_frame";
-        msg->width = output.cols;
-        msg->height = output.rows;
-        // msg_d->step=depth_image.cols;
-        // msg_d->encoding=sensor_msgs::image_encodings::TYPE_16UC1;
+    //     sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output).toImageMsg();
+    //     ros::Time time = ros::Time::now();
+    //     msg->header.stamp = time;
+    //     msg->header.frame_id = "pico_zense_depth_frame";
+    //     msg->width = output.cols;
+    //     msg->height = output.rows;
+    //     // msg_d->step=depth_image.cols;
+    //     // msg_d->encoding=sensor_msgs::image_encodings::TYPE_16UC1;
 
-        sensor_msgs::CameraInfo camera_info_msg;
-        camera_info_msg.width = output.cols;
-        camera_info_msg.height = output.rows;
-        camera_info_msg.K = {460.58518931365654, 0.0, 334.0805877590529, 0.0, 460.2679961517268, 169.80766383231037, 0.0, 0.0, 1.0};
-        camera_info_msg.D = {0.5738898338521625, 1.392306924206032, 0.0016638208693078532, 0.0008464359166083861, -2.049893407299752};
-        camera_info_msg.R = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        camera_info_msg.P = {460.58518931365654, 0.0, 334.0805877590529, 0.0, 0.0, 460.2679961517268, 169.80766383231037, 0.0, 0.0, 0.0, 1.0, 0.0};
-        camera_info_msg.distortion_model = "plumb_bob";
-        camera_info_msg.header.stamp = time;
-        camera_info_msg.header.frame_id = "pico_zense_depth_frame";
-        pub_image.publish(msg);
-        pub_i.publish(camera_info_msg);
-    }
+    //     sensor_msgs::CameraInfo camera_info_msg;
+    //     camera_info_msg.width = output.cols;
+    //     camera_info_msg.height = output.rows;
+    //     camera_info_msg.K = {460.58518931365654, 0.0, 334.0805877590529, 0.0, 460.2679961517268, 169.80766383231037, 0.0, 0.0, 1.0};
+    //     camera_info_msg.D = {0.5738898338521625, 1.392306924206032, 0.0016638208693078532, 0.0008464359166083861, -2.049893407299752};
+    //     camera_info_msg.R = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    //     camera_info_msg.P = {460.58518931365654, 0.0, 334.0805877590529, 0.0, 0.0, 460.2679961517268, 169.80766383231037, 0.0, 0.0, 0.0, 1.0, 0.0};
+    //     camera_info_msg.distortion_model = "plumb_bob";
+    //     camera_info_msg.header.stamp = time;
+    //     camera_info_msg.header.frame_id = "pico_zense_depth_frame";
+    //     pub_image.publish(msg);
+    //     pub_i.publish(camera_info_msg);
+    // }
 
     void
     clusterfind(const PointCloud::ConstPtr &cloud_in)
@@ -313,7 +308,7 @@ public:
                   << " points " << fields_list << "\" in frame \"" << cloud_colored_sensor.header.frame_id << std::endl;
         cloud_colored_sensor.header.stamp = ros::Time::now();
         pub_.publish(cloud_colored_sensor);
-        imageFromPCD(cloud_colored_pcl);
+        // imageFromPCD(cloud_colored_pcl);
     }
 
     void
@@ -424,7 +419,7 @@ private:
     ros::Publisher normal_marker_pub;
     pcl_ros::Publisher<sensor_msgs::PointCloud2> pub_;
 
-    image_transport::Publisher pub_image;
+    // image_transport::Publisher pub_image;
     ros::Publisher pub_i = nh_.advertise<sensor_msgs::CameraInfo>("camera/info", 1);
     dynamic_reconfigure::Server<pcd_tutorial::pcd_tutorial_nodeConfig> config_server_;
     Eigen::Vector3f gravity, gravity0;

@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   topic_tools
   visualization_msgs
-  cv_bridge
   message_filters
   image_transport
 )
@@ -103,7 +102,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 generate_dynamic_reconfigure_options(
-   cfg/pcd_tutorial_node.cfg
+  cfg/pcd_tutorial_node.cfg
+  cfg/voxel_filter_node.cfg
 #  cfg/passthrough_filter_node.cfg
 #  cfg/plane_segmentation_node.cfg
 #  cfg/shape_finder_node.cfg
@@ -141,5 +141,8 @@ target_link_libraries (pcd_tutorial_node ${PCL_LIBRARIES} ${Boost_LIBRARIES} ${c
 
 add_dependencies(pcd_tutorial_node ${PROJECT_NAME}_gencfg)
 
+add_executable (voxel_filter src/voxel_filter.cpp)
 
+target_link_libraries (voxel_filter ${PCL_LIBRARIES} ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+add_dependencies(voxel_filter ${PROJECT_NAME}_gencfg)
